@@ -23,7 +23,7 @@ val cmdVersionName = project.findProperty("versionName") as String?
 ext {
     set("compileSdkVersion", 35)
     set("minSdkVersion", 26)
-    set("targetSdkVersion", 35)
+    set("targetSdkVersion", 34)
     set("appVersionCode", cmdVersionCode ?: (versionProps["versionCode"] as String).toInt())
     set("appVersionName", cmdVersionName ?: versionProps["versionName"] as String)
 }
