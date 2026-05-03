@@ -41,11 +41,19 @@ get_version() {
   local short_hash
   short_hash=$(git rev-parse --short HEAD)
 
+  # Include the dotted base "0.0.0-" prefix so version.NewVersion can
+  # parse it AND so client/internal/lazyconn/support.go's IsSupported()
+  # accepts it as a real (>= 0.45.0) version. Plain "dev-<sha>" was
+  # rejected by IsSupported because it has no '.', causing the lazy
+  # manager to eager-open every connection to peers running custom
+  # builds. The phase-3.7i fix in support.go also accepts the bare
+  # "dev-"/"ci-" prefix, but writing a parseable version here keeps the
+  # version line in `netbird status` cleanly comparable.
   local new_version
   if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
-    new_version="ci-$short_hash"
+    new_version="0.0.0-ci-$short_hash"
   else
-    new_version="dev-$short_hash"
+    new_version="0.0.0-dev-$short_hash"
   fi
 
   echo "$new_version"
