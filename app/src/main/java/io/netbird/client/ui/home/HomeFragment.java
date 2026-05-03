@@ -11,7 +11,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.airbnb.lottie.LottieAnimationView;
 
@@ -21,7 +20,6 @@ import java.util.concurrent.Executors;
 import io.netbird.client.PlatformUtils;
 import io.netbird.client.R;
 import io.netbird.client.ServiceAccessor;
-import io.netbird.gomobile.android.PeerInfoArray;
 import io.netbird.client.StateListener;
 import io.netbird.client.StateListenerRegistry;
 import io.netbird.client.databinding.FragmentHomeBinding;
@@ -38,7 +36,6 @@ public class HomeFragment extends Fragment implements StateListener {
     private LottieAnimationView buttonConnect;
     private ButtonAnimation buttonAnimation;
     private boolean isConnected;
-    private PeerListAdapter peerAdapter;
 
     // serializes peer-list refreshes off the UI thread; serviceAccessor.getPeersList()
     // is a JNI call into Go that can take seconds during engine bootstrap/teardown
@@ -114,16 +111,6 @@ public class HomeFragment extends Fragment implements StateListener {
             fragment.show(getParentFragmentManager(), fragment.getTag());
         });
 
-        // Peer list RecyclerView (Phase 3.7i #5989)
-        peerAdapter = new PeerListAdapter(requireContext());
-        int detailLevel = 0;
-        try {
-            detailLevel = new io.netbird.client.tool.Preferences(requireContext()).getPeerDetailLevel();
-        } catch (Throwable ignored) {}
-        peerAdapter.setShowFullDetails(detailLevel == 1);
-        binding.recyclerPeers.setLayoutManager(new LinearLayoutManager(requireContext()));
-        binding.recyclerPeers.setAdapter(peerAdapter);
-
         if (PlatformUtils.isAndroidTV(requireContext())) {
             root.postDelayed(() -> {
                 if (buttonConnect != null && buttonConnect.isEnabled()) {
@@ -148,7 +135,6 @@ public class HomeFragment extends Fragment implements StateListener {
         }
         FrameLayout openPanelCardView = binding.peersBtn;
         openPanelCardView.setOnClickListener(null);
-        peerAdapter = null;
         binding = null;
     }
 
@@ -205,7 +191,6 @@ public class HomeFragment extends Fragment implements StateListener {
             buttonConnect.setEnabled(true);
         });
         updatePeerCounts(PeerCounts.empty());
-        if (peerAdapter != null) peerAdapter.submit(null);
     }
 
     @Override
@@ -228,9 +213,7 @@ public class HomeFragment extends Fragment implements StateListener {
                     serviceAccessor.getIdleOnlinePeers(),
                     serviceAccessor.getServerOfflinePeers()
             );
-            PeerInfoArray peersList = serviceAccessor.getPeersList();
             updatePeerCounts(c);
-            if (peerAdapter != null) peerAdapter.submit(peersList);
         });
     }
 
