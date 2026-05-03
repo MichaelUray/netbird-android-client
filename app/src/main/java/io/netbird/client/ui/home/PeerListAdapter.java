@@ -159,9 +159,7 @@ public class PeerListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             pvh.detailPanel.setVisibility(expanded ? View.VISIBLE : View.GONE);
 
             if (expanded) {
-                // Standard detail: conn type label only (Full detail needs Go-side enrichment).
-                String connType = s.toString();
-                pvh.textConnType.setText("Status: " + connType);
+                pvh.textConnType.setText(buildDetailText(peer, showFullDetails));
             }
 
             pvh.rowHeader.setOnClickListener(v -> {
@@ -180,6 +178,48 @@ public class PeerListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 }
             });
         }
+    }
+
+    // --- Detail helpers ---
+
+    /**
+     * Builds the multi-line detail text shown in the expanded accordion panel.
+     * Phase 3.7i (#5989): uses enriched PeerInfo fields from Go-side.
+     */
+    private String buildDetailText(PeerInfo p, boolean full) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("IP:                ").append(orDash(p.getIP())).append("\n");
+        sb.append("FQDN:              ").append(orDash(p.getFQDN())).append("\n");
+        String connType = p.getConnStatus() == 1 ? "Connected" : p.getConnStatus() == 2 ? "Connecting" : "Idle";
+        if (p.getRelayed()) connType += " (relayed)";
+        sb.append("Connection type:   ").append(connType).append("\n");
+        sb.append("Effective mode:    ").append(orDash(p.getEffectiveConnectionMode())).append("\n");
+        if (!isEqual(p.getEffectiveConnectionMode(), p.getConfiguredConnectionMode())
+                && p.getConfiguredConnectionMode() != null && !p.getConfiguredConnectionMode().isEmpty()) {
+            sb.append("Configured mode:   ").append(orDash(p.getConfiguredConnectionMode())).append("\n");
+        }
+        sb.append("Last handshake:    ").append(orDash(p.getLastWireguardHandshake())).append("\n");
+        long latencyMs = p.getLatencyMs();
+        sb.append("Latency:           ").append(latencyMs > 0 ? latencyMs + " ms" : "-").append("\n");
+        if (p.getConnStatus() == 1) { // Connected
+            if (p.getRelayed()) {
+                sb.append("Relay server:      ").append(orDash(p.getRelayServerAddress())).append("\n");
+            } else {
+                sb.append("Local endpoint:    ").append(orDash(p.getLocalIceCandidateEndpoint())).append("\n");
+                sb.append("Remote endpoint:   ").append(orDash(p.getRemoteIceCandidateEndpoint())).append("\n");
+            }
+        }
+        sb.append("Last seen at srv:  ").append(orDash(p.getLastSeenAtServer())).append("\n");
+        sb.append("Groups:            ").append(orDash(p.getGroups())).append("\n");
+        return sb.toString();
+    }
+
+    private String orDash(String s) {
+        return (s == null || s.isEmpty()) ? "-" : s;
+    }
+
+    private boolean isEqual(String a, String b) {
+        return (a == null ? "" : a).equals(b == null ? "" : b);
     }
 
     // --- Inner types ---
