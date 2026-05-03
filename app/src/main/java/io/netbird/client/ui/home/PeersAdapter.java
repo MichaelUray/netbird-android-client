@@ -206,8 +206,19 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
      * Phase 3.7i (#5989): per-peer detail dialog opened on row tap.
      * Custom layout: section headers + label/value rows; all values are
      * selectable so users can long-press to copy any field.
+     *
+     * Note: AlertDialog uses Material's light dialog background even in
+     * a dark-mode app, so we hardcode dark text colors instead of using
+     * the theme-aware nb_txt (which is white in dark mode → invisible).
      */
     private static void showDetailDialog(Context ctx, Peer peer) {
+        // Read Show-Full preference here so the dialog reflects the
+        // user's setting from AdvancedFragment.
+        boolean full = false;
+        try {
+            full = new io.netbird.client.tool.Preferences(ctx).getPeerDetailLevel() == 1;
+        } catch (Throwable ignored) {}
+
         ScrollView scroll = new ScrollView(ctx);
         LinearLayout root = new LinearLayout(ctx);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -250,10 +261,25 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
         addSectionHeader(ctx, root, "Server");
         addRow(ctx, root, "Last seen", peer.getLastSeenAtServer());
 
-        // Transfer
+        // Transfer (basic in Standard, exact bytes in Full)
         addSectionHeader(ctx, root, "Transfer");
-        addRow(ctx, root, "Rx", formatBytes(peer.getRxBytes()));
-        addRow(ctx, root, "Tx", formatBytes(peer.getTxBytes()));
+        if (full) {
+            addRow(ctx, root, "Rx", peer.getRxBytes() + " B (" + formatBytes(peer.getRxBytes()) + ")");
+            addRow(ctx, root, "Tx", peer.getTxBytes() + " B (" + formatBytes(peer.getTxBytes()) + ")");
+        } else {
+            addRow(ctx, root, "Rx", formatBytes(peer.getRxBytes()));
+            addRow(ctx, root, "Tx", formatBytes(peer.getTxBytes()));
+        }
+
+        // Full-only debug section
+        if (full) {
+            addSectionHeader(ctx, root, "Debug (full)");
+            addRow(ctx, root, "ServerOnline", String.valueOf(peer.isServerOnline()));
+            addRow(ctx, root, "Relayed flag", String.valueOf(peer.isRelayed()));
+            addRow(ctx, root, "Local endpoint", peer.getLocalEndpoint());
+            addRow(ctx, root, "Remote endpoint", peer.getRemoteEndpoint());
+            addRow(ctx, root, "Relay server", peer.getRelayServer());
+        }
 
         new AlertDialog.Builder(ctx)
                 .setTitle(peer.getFqdn())
@@ -262,12 +288,20 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
                 .show();
     }
 
+    // Hardcoded color constants — AlertDialog content lives on a light
+    // surface even when the host app is in dark mode, so theme-aware
+    // colors (which would be near-white in dark mode) make text
+    // invisible. These two ARGB values are visible on light AND dark
+    // dialog surfaces.
+    private static final int DIALOG_LABEL_COLOR = 0xFF6E6E6E;
+    private static final int DIALOG_VALUE_COLOR = 0xFF1A1A1A;
+
     private static void addSectionHeader(Context ctx, LinearLayout parent, String text) {
         TextView tv = new TextView(ctx);
         tv.setText(text.toUpperCase());
         tv.setTypeface(Typeface.DEFAULT_BOLD);
         tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        tv.setTextColor(ContextCompat.getColor(ctx, R.color.nb_txt_light));
+        tv.setTextColor(DIALOG_LABEL_COLOR);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -284,7 +318,7 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
         TextView lbl = new TextView(ctx);
         lbl.setText(label);
         lbl.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        lbl.setTextColor(ContextCompat.getColor(ctx, R.color.nb_txt_light));
+        lbl.setTextColor(DIALOG_LABEL_COLOR);
         LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -295,9 +329,8 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
         TextView val = new TextView(ctx);
         val.setText(value);
         val.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-        val.setTextColor(ContextCompat.getColor(ctx, R.color.nb_txt));
+        val.setTextColor(DIALOG_VALUE_COLOR);
         val.setTextIsSelectable(true);
-        val.setMovementMethod(LinkMovementMethod.getInstance());
         val.setGravity(Gravity.START);
         LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
