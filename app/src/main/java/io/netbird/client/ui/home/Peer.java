@@ -21,6 +21,10 @@ public class Peer {
    // Phase 3.7i hybrid display: daemon-derived UI label.
    // Values: "", "P2P", "Relayed", "Relayed (negotiating P2P)".
    private final String connectionTypeExtended;
+   // Phase 3.7i lifecycle hardening: ICE-backoff snapshot.
+   private final int iceBackoffFailures;
+   private final String iceBackoffNextRetry; // RFC3339; "" if zero
+   private final boolean iceBackoffSuspended;
 
    public Peer(Status status, String ip, String fqdn,
                boolean relayed, boolean serverOnline,
@@ -28,7 +32,9 @@ public class Peer {
                String localEndpoint, String remoteEndpoint, String relayServer,
                String lastHandshake, String lastSeenAtServer,
                long latencyMs, String groups, long rxBytes, long txBytes,
-               String connectionTypeExtended) {
+               String connectionTypeExtended,
+               int iceBackoffFailures, String iceBackoffNextRetry,
+               boolean iceBackoffSuspended) {
       this.status = status;
       this.ip = ip;
       this.fqdn = fqdn;
@@ -46,6 +52,9 @@ public class Peer {
       this.rxBytes = rxBytes;
       this.txBytes = txBytes;
       this.connectionTypeExtended = connectionTypeExtended == null ? "" : connectionTypeExtended;
+      this.iceBackoffFailures = iceBackoffFailures;
+      this.iceBackoffNextRetry = iceBackoffNextRetry == null ? "" : iceBackoffNextRetry;
+      this.iceBackoffSuspended = iceBackoffSuspended;
    }
 
    public Status getStatus() { return status; }
@@ -65,6 +74,9 @@ public class Peer {
    public long getRxBytes() { return rxBytes; }
    public long getTxBytes() { return txBytes; }
    public String getConnectionTypeExtended() { return connectionTypeExtended; }
+   public int getIceBackoffFailures() { return iceBackoffFailures; }
+   public String getIceBackoffNextRetry() { return iceBackoffNextRetry; }
+   public boolean isIceBackoffSuspended() { return iceBackoffSuspended; }
 
    /** Short connection-type label for the row.
     *  Prefers the daemon-derived ConnectionTypeExtended so the brief

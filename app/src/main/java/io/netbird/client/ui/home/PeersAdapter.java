@@ -297,6 +297,15 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
             addRow(ctx, root, "Local endpoint", peer.getLocalEndpoint());
             addRow(ctx, root, "Remote endpoint", peer.getRemoteEndpoint());
             addRow(ctx, root, "Relay server", peer.getRelayServer());
+            // ICE-backoff: explains why a peer stays Relayed.
+            if (peer.getIceBackoffFailures() > 0) {
+                addRow(ctx, root, "ICE backoff fails", String.valueOf(peer.getIceBackoffFailures()));
+            }
+            if (peer.isIceBackoffSuspended()) {
+                addRow(ctx, root, "ICE backoff", "SUSPENDED (no retries until next mode-event)");
+            } else if (!peer.getIceBackoffNextRetry().isEmpty()) {
+                addRow(ctx, root, "ICE next retry", peer.getIceBackoffNextRetry());
+            }
         }
 
         new AlertDialog.Builder(ctx)

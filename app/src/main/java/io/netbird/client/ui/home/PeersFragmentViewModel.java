@@ -82,7 +82,10 @@ public class PeersFragmentViewModel extends ViewModel implements PeersStateListe
                     peerInfo.getGroups(),
                     peerInfo.getBytesRx(),
                     peerInfo.getBytesTx(),
-                    peerInfo.getConnectionTypeExtended()
+                    peerInfo.getConnectionTypeExtended(),
+                    (int) peerInfo.getIceBackoffFailures(),
+                    peerInfo.getIceBackoffNextRetry(),
+                    peerInfo.getIceBackoffSuspended()
             ));
         }
         return peers;
