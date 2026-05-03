@@ -116,6 +116,11 @@ public class HomeFragment extends Fragment implements StateListener {
 
         // Peer list RecyclerView (Phase 3.7i #5989)
         peerAdapter = new PeerListAdapter(requireContext());
+        int detailLevel = 0;
+        try {
+            detailLevel = new io.netbird.client.tool.Preferences(requireContext()).getPeerDetailLevel();
+        } catch (Throwable ignored) {}
+        peerAdapter.setShowFullDetails(detailLevel == 1);
         binding.recyclerPeers.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.recyclerPeers.setAdapter(peerAdapter);
 

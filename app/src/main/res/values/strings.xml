@@ -155,4 +155,10 @@
     <!-- Phase 3.7i (#5989): peer-status counter widget -->
     <string name="peers_count_summary"><![CDATA[<b>%1$d of %2$d</b> peers online]]></string>
     <string name="peers_count_breakdown">P2P: %1$d   Relayed: %2$d   Idle: %3$d   Offline: %4$d</string>
+
+    <!-- Phase 3.7i (#5989): peer detail level toggle -->
+    <string name="advanced_peer_detail_title">Peer detail level</string>
+    <string name="advanced_peer_detail_desc">Standard shows the most useful per-peer info; Full adds ICE pair details, transfer counters, and roaming history.</string>
+    <string name="advanced_peer_detail_standard">Standard</string>
+    <string name="advanced_peer_detail_full">Full</string>
 </resources>

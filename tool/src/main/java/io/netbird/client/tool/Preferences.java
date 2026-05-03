@@ -27,4 +27,15 @@ public class Preferences {
     public static String defaultServer() {
         return "https://api.netbird.io";
     }
+
+    // Phase 3.7i (#5989): peer detail level (0 = Standard, 1 = Full).
+    private final String keyPeerDetailLevel = "peerDetailLevel";
+
+    public int getPeerDetailLevel() {
+        return sharedPref.getInt(keyPeerDetailLevel, 0);
+    }
+
+    public void setPeerDetailLevel(int level) {
+        sharedPref.edit().putInt(keyPeerDetailLevel, level).apply();
+    }
 }

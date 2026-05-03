@@ -154,6 +154,19 @@ public class AdvancedFragment extends Fragment {
             AppCompatDelegate.setDefaultNightMode(mode);
         });
 
+        // Peer detail level toggle (Phase 3.7i #5989)
+        Preferences peerPreferences = new Preferences(inflater.getContext());
+        int detailLevel = peerPreferences.getPeerDetailLevel();
+        if (detailLevel == 1) {
+            binding.radioGroupPeerDetail.check(binding.radioPeerDetailFull.getId());
+        } else {
+            binding.radioGroupPeerDetail.check(binding.radioPeerDetailStandard.getId());
+        }
+        binding.radioGroupPeerDetail.setOnCheckedChangeListener((group, checkedId) -> {
+            int newLevel = (checkedId == binding.radioPeerDetailFull.getId()) ? 1 : 0;
+            peerPreferences.setPeerDetailLevel(newLevel);
+        });
+
         return root;
     }
 
