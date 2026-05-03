@@ -298,13 +298,28 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
             addRow(ctx, root, "Remote endpoint", peer.getRemoteEndpoint());
             addRow(ctx, root, "Relay server", peer.getRelayServer());
             // ICE-backoff: explains why a peer stays Relayed.
+            // Codex finding 4: the daemon snapshot only refreshes on
+            // ICE state-change events, so isIceBackoffSuspended() can
+            // stay true long after the cool-down has expired. Mirror
+            // the CLI's wall-clock check (status.go:797): only show
+            // "suspended" while nextRetry is still in the future,
+            // otherwise show the next-retry timestamp, otherwise hide.
             if (peer.getIceBackoffFailures() > 0) {
                 addRow(ctx, root, "ICE backoff fails", String.valueOf(peer.getIceBackoffFailures()));
             }
-            if (peer.isIceBackoffSuspended()) {
-                addRow(ctx, root, "ICE backoff", "SUSPENDED (no retries until next mode-event)");
-            } else if (!peer.getIceBackoffNextRetry().isEmpty()) {
-                addRow(ctx, root, "ICE next retry", peer.getIceBackoffNextRetry());
+            String nrStr = peer.getIceBackoffNextRetry();
+            if (nrStr != null && !nrStr.isEmpty()) {
+                long nextMs = parseRfc3339Ms(nrStr);
+                long nowMs = System.currentTimeMillis();
+                long remaining = nextMs - nowMs;
+                if (peer.isIceBackoffSuspended() && remaining > 0) {
+                    addRow(ctx, root, "ICE backoff",
+                        "suspended for " + (remaining / 1000) + "s (retry at " + nrStr + ")");
+                } else if (remaining > 0) {
+                    addRow(ctx, root, "ICE next retry",
+                        nrStr + " (in " + (remaining / 1000) + "s)");
+                }
+                // remaining <= 0: cool-down expired by wall-clock — hide.
             }
         }
 
@@ -384,4 +399,23 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
     }
 
     private static String orDash(String s) { return (s == null || s.isEmpty()) ? "-" : s; }
+
+    /**
+     * Parses an RFC3339 timestamp ("2026-05-03T22:30:00Z" or with offset)
+     * into epoch-ms. Returns 0 on parse failure (caller treats 0 as
+     * "no timestamp" / never-due). Used for the wall-clock check on
+     * IceBackoffNextRetry — see Codex finding 4 / status.go:797.
+     */
+    private static long parseRfc3339Ms(String s) {
+        if (s == null || s.isEmpty()) return 0L;
+        try {
+            return java.time.OffsetDateTime.parse(s).toInstant().toEpochMilli();
+        } catch (Throwable e1) {
+            try {
+                return java.time.Instant.parse(s).toEpochMilli();
+            } catch (Throwable e2) {
+                return 0L;
+            }
+        }
+    }
 }
