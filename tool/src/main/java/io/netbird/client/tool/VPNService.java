@@ -259,6 +259,31 @@ public class VPNService extends android.net.VpnService {
             return engineRunner.getServerPushedP2pRetryMaxSecs();
         }
 
+        // Phase 3.7i (#5989): aggregate counters.
+        public long getConfiguredPeersTotal() {
+            return engineRunner.getConfiguredPeersTotal();
+        }
+
+        public long getServerOnlinePeers() {
+            return engineRunner.getServerOnlinePeers();
+        }
+
+        public long getP2pConnectedPeers() {
+            return engineRunner.getP2pConnectedPeers();
+        }
+
+        public long getRelayedConnectedPeers() {
+            return engineRunner.getRelayedConnectedPeers();
+        }
+
+        public long getIdleOnlinePeers() {
+            return engineRunner.getIdleOnlinePeers();
+        }
+
+        public long getServerOfflinePeers() {
+            return engineRunner.getServerOfflinePeers();
+        }
+
         public void selectRoute(String route) throws Exception {
             engineRunner.selectRoute(route);
         }

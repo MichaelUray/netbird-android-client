@@ -46,4 +46,12 @@ public interface ServiceAccessor {
      * Returns the p2p retry-max cap in seconds most recently pushed.
      */
     long getServerPushedP2pRetryMaxSecs();
+
+    // Phase 3.7i (#5989): aggregate peer-status counters.
+    long getConfiguredPeersTotal();
+    long getServerOnlinePeers();
+    long getP2pConnectedPeers();
+    long getRelayedConnectedPeers();
+    long getIdleOnlinePeers();
+    long getServerOfflinePeers();
 }
