@@ -81,7 +81,8 @@ public class PeersFragmentViewModel extends ViewModel implements PeersStateListe
                     peerInfo.getLatencyMs(),
                     peerInfo.getGroups(),
                     peerInfo.getBytesRx(),
-                    peerInfo.getBytesTx()
+                    peerInfo.getBytesTx(),
+                    peerInfo.getConnectionTypeExtended()
             ));
         }
         return peers;

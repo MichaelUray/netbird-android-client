@@ -185,11 +185,29 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
             binding.ip.setText(peer.getIp());
             binding.fqdn.setText(peer.getFqdn());
 
-            if (peer.getStatus() == Status.CONNECTED) {
-                binding.verticalLine.setBackgroundResource(R.drawable.peer_status_connected);
+            // Phase 3.7i color coding:
+            //   P2P (incl. negotiating)  -> green / dark-green
+            //   Relayed permanent        -> dark green
+            //   Idle (lazy waiting)      -> grey
+            //   Offline (server unreach) -> red
+            int swatchRes;
+            if (!peer.isServerOnline()) {
+                swatchRes = R.drawable.peer_status_offline;
             } else {
-                binding.verticalLine.setBackgroundResource(R.drawable.peer_status_disconnected);
+                String label = peer.getConnTypeLabel();
+                if ("P2P".equals(label)) {
+                    swatchRes = R.drawable.peer_status_p2p;
+                } else if ("Relayed".equals(label) || "Relayed (negotiating P2P)".equals(label)) {
+                    swatchRes = R.drawable.peer_status_relayed;
+                } else if (peer.getStatus() == Status.CONNECTED) {
+                    // Daemon pre-3.7i fallback: Connected without extended label.
+                    swatchRes = peer.isRelayed() ? R.drawable.peer_status_relayed
+                            : R.drawable.peer_status_p2p;
+                } else {
+                    swatchRes = R.drawable.peer_status_idle;
+                }
             }
+            binding.verticalLine.setBackgroundResource(swatchRes);
 
             // Phase 3.7i: tap opens detail dialog with all available info.
             binding.getRoot().setOnClickListener(v -> showDetailDialog(v.getContext(), peer));
