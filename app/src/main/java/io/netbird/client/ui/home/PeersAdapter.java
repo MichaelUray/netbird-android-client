@@ -5,13 +5,22 @@ import static io.netbird.client.ui.home.PeersAdapter.FilterStatus.ALL;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.graphics.Typeface;
+import android.text.method.LinkMovementMethod;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -164,21 +173,155 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
         }
 
         public void bind(Peer peer) {
-            binding.status.setText(peer.getStatus().toString());
+            // Phase 3.7i: status text shows the user-facing connection-type
+            // label (P2P / Relayed / Idle / Offline) with the effective
+            // mode in parens when known and meaningful.
+            String statusText = peer.getConnTypeLabel();
+            String mode = peer.getEffectiveMode();
+            if (mode != null && !mode.isEmpty()) {
+                statusText = statusText + " · " + mode;
+            }
+            binding.status.setText(statusText);
             binding.ip.setText(peer.getIp());
             binding.fqdn.setText(peer.getFqdn());
 
             if (peer.getStatus() == Status.CONNECTED) {
-                binding.verticalLine.setBackgroundResource(R.drawable.peer_status_connected); // Green for connected
+                binding.verticalLine.setBackgroundResource(R.drawable.peer_status_connected);
             } else {
-                binding.verticalLine.setBackgroundResource(R.drawable.peer_status_disconnected); // Red for disconnected
+                binding.verticalLine.setBackgroundResource(R.drawable.peer_status_disconnected);
             }
 
-            // Long press listener
+            // Phase 3.7i: tap opens detail dialog with all available info.
+            binding.getRoot().setOnClickListener(v -> showDetailDialog(v.getContext(), peer));
+
+            // Long press still opens the existing copy-IP/copy-FQDN popup.
             binding.getRoot().setOnLongClickListener(v -> {
                 showPopup(v, peer);
                 return true;
             });
         }
     }
+
+    /**
+     * Phase 3.7i (#5989): per-peer detail dialog opened on row tap.
+     * Custom layout: section headers + label/value rows; all values are
+     * selectable so users can long-press to copy any field.
+     */
+    private static void showDetailDialog(Context ctx, Peer peer) {
+        ScrollView scroll = new ScrollView(ctx);
+        LinearLayout root = new LinearLayout(ctx);
+        root.setOrientation(LinearLayout.VERTICAL);
+        int pad = dp(ctx, 16);
+        root.setPadding(pad, pad, pad, pad);
+        scroll.addView(root);
+
+        // Identity
+        addSectionHeader(ctx, root, "Identity");
+        addRow(ctx, root, "IP", peer.getIp());
+        addRow(ctx, root, "FQDN", peer.getFqdn());
+        if (!peer.getGroups().isEmpty()) {
+            addRow(ctx, root, "Groups", peer.getGroups());
+        }
+
+        // Connection
+        addSectionHeader(ctx, root, "Connection");
+        addRow(ctx, root, "Type", peer.getConnTypeLabel());
+        if (peer.getStatus() == Status.CONNECTED) {
+            if (peer.isRelayed()) {
+                addRow(ctx, root, "Relay server", peer.getRelayServer());
+            } else {
+                addRow(ctx, root, "Local endpoint", peer.getLocalEndpoint());
+                addRow(ctx, root, "Remote endpoint", peer.getRemoteEndpoint());
+            }
+        }
+        addRow(ctx, root, "Last handshake", peer.getLastHandshake());
+        long latency = peer.getLatencyMs();
+        addRow(ctx, root, "Latency", latency > 0 ? latency + " ms" : "-");
+
+        // Mode
+        addSectionHeader(ctx, root, "Mode");
+        addRow(ctx, root, "Effective", peer.getEffectiveMode());
+        if (!peer.getEffectiveMode().equals(peer.getConfiguredMode())
+                && !peer.getConfiguredMode().isEmpty()) {
+            addRow(ctx, root, "Configured", peer.getConfiguredMode());
+        }
+
+        // Server
+        addSectionHeader(ctx, root, "Server");
+        addRow(ctx, root, "Last seen", peer.getLastSeenAtServer());
+
+        // Transfer
+        addSectionHeader(ctx, root, "Transfer");
+        addRow(ctx, root, "Rx", formatBytes(peer.getRxBytes()));
+        addRow(ctx, root, "Tx", formatBytes(peer.getTxBytes()));
+
+        new AlertDialog.Builder(ctx)
+                .setTitle(peer.getFqdn())
+                .setView(scroll)
+                .setPositiveButton("Close", null)
+                .show();
+    }
+
+    private static void addSectionHeader(Context ctx, LinearLayout parent, String text) {
+        TextView tv = new TextView(ctx);
+        tv.setText(text.toUpperCase());
+        tv.setTypeface(Typeface.DEFAULT_BOLD);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        tv.setTextColor(ContextCompat.getColor(ctx, R.color.nb_txt_light));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = dp(ctx, 12);
+        lp.bottomMargin = dp(ctx, 4);
+        tv.setLayoutParams(lp);
+        parent.addView(tv);
+    }
+
+    private static void addRow(Context ctx, LinearLayout parent, String label, String value) {
+        if (value == null || value.isEmpty()) value = "-";
+
+        // Label (small, gray)
+        TextView lbl = new TextView(ctx);
+        lbl.setText(label);
+        lbl.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        lbl.setTextColor(ContextCompat.getColor(ctx, R.color.nb_txt_light));
+        LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        llp.topMargin = dp(ctx, 6);
+        lbl.setLayoutParams(llp);
+
+        // Value (regular, selectable for copy)
+        TextView val = new TextView(ctx);
+        val.setText(value);
+        val.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        val.setTextColor(ContextCompat.getColor(ctx, R.color.nb_txt));
+        val.setTextIsSelectable(true);
+        val.setMovementMethod(LinkMovementMethod.getInstance());
+        val.setGravity(Gravity.START);
+        LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        val.setLayoutParams(vlp);
+
+        parent.addView(lbl);
+        parent.addView(val);
+    }
+
+    private static int dp(Context ctx, int v) {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v,
+                ctx.getResources().getDisplayMetrics());
+    }
+
+    /** Human-readable byte formatting. */
+    private static String formatBytes(long bytes) {
+        if (bytes <= 0) return "0 B";
+        final long kib = 1024;
+        if (bytes < kib) return bytes + " B";
+        if (bytes < kib * kib) return String.format("%.1f KB", bytes / (double) kib);
+        if (bytes < kib * kib * kib) return String.format("%.1f MB", bytes / (double) (kib * kib));
+        return String.format("%.2f GB", bytes / (double) (kib * kib * kib));
+    }
+
+    private static String orDash(String s) { return (s == null || s.isEmpty()) ? "-" : s; }
 }
