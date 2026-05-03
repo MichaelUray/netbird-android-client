@@ -144,18 +144,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_peers"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:focusable="false"
-        android:focusableInTouchMode="false"
-        app:layout_constraintWidth_max="600dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/text_network_address"
-        app:layout_constraintBottom_toTopOf="@id/peers_btn" />
-
     <FrameLayout
         android:id="@+id/peers_btn"
         android:layout_width="0dp"
