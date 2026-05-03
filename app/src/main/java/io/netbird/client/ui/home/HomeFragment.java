@@ -11,6 +11,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.airbnb.lottie.LottieAnimationView;
 
@@ -33,6 +34,7 @@ public class HomeFragment extends Fragment implements StateListener {
     private LottieAnimationView buttonConnect;
     private ButtonAnimation buttonAnimation;
     private boolean isConnected;
+    private PeerListAdapter peerAdapter;
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -104,6 +106,11 @@ public class HomeFragment extends Fragment implements StateListener {
             fragment.show(getParentFragmentManager(), fragment.getTag());
         });
 
+        // Peer list RecyclerView (Phase 3.7i #5989)
+        peerAdapter = new PeerListAdapter(requireContext());
+        binding.recyclerPeers.setLayoutManager(new LinearLayoutManager(requireContext()));
+        binding.recyclerPeers.setAdapter(peerAdapter);
+
         if (PlatformUtils.isAndroidTV(requireContext())) {
             root.postDelayed(() -> {
                 if (buttonConnect != null && buttonConnect.isEnabled()) {
@@ -123,6 +130,7 @@ public class HomeFragment extends Fragment implements StateListener {
         stateListenerRegistry.unregisterServiceStateListener(this);
         FrameLayout openPanelCardView = binding.peersBtn;
         openPanelCardView.setOnClickListener(null);
+        peerAdapter = null;
         binding = null;
     }
 
@@ -179,6 +187,7 @@ public class HomeFragment extends Fragment implements StateListener {
             buttonConnect.setEnabled(true);
         });
         updatePeerCounts(PeerCounts.empty());
+        if (peerAdapter != null) peerAdapter.submit(null);
     }
 
     @Override
@@ -197,6 +206,7 @@ public class HomeFragment extends Fragment implements StateListener {
                 serviceAccessor.getServerOfflinePeers()
         );
         updatePeerCounts(c);
+        if (peerAdapter != null) peerAdapter.submit(serviceAccessor.getPeersList());
     }
 
     private void updatePeerCounts(PeerCounts c) {
