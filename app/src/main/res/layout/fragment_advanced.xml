@@ -639,6 +639,68 @@
                 </RadioGroup>
             </LinearLayout>
 
+            <!-- Phase 3.7i (#5989): Peer detail level toggle -->
+            <LinearLayout
+                android:id="@+id/layout_peer_detail"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/layout_theme">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/advanced_peer_detail_title"
+                    android:textColor="@color/nb_txt"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/advanced_peer_detail_desc"
+                    android:textColor="@color/nb_txt_light"
+                    android:textSize="14sp" />
+
+                <RadioGroup
+                    android:id="@+id/radio_group_peer_detail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/radio_peer_detail_standard"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/focus_highlight"
+                        android:focusable="true"
+                        android:focusableInTouchMode="false"
+                        android:padding="12dp"
+                        android:text="@string/advanced_peer_detail_standard"
+                        android:textColor="@color/nb_txt_light" />
+
+                    <RadioButton
+                        android:id="@+id/radio_peer_detail_full"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:background="@drawable/focus_highlight"
+                        android:focusable="true"
+                        android:focusableInTouchMode="false"
+                        android:padding="12dp"
+                        android:text="@string/advanced_peer_detail_full"
+                        android:textColor="@color/nb_txt_light" />
+
+                </RadioGroup>
+            </LinearLayout>
+
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </LinearLayout>
