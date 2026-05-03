@@ -151,4 +151,8 @@
     <string name="profiles_success_switched">Switched to profile \'%s\'</string>
     <string name="profiles_success_logged_out">Logged out from profile \'%s\'</string>
     <string name="profiles_success_removed">Profile \'%s\' removed successfully</string>
+
+    <!-- Phase 3.7i (#5989): peer-status counter widget -->
+    <string name="peers_count_summary"><![CDATA[<b>%1$d of %2$d</b> peers online]]></string>
+    <string name="peers_count_breakdown">P2P: %1$d   Relayed: %2$d   Idle: %3$d   Offline: %4$d</string>
 </resources>
