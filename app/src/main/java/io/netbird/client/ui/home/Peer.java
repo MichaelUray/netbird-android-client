@@ -18,13 +18,17 @@ public class Peer {
    private final String groups;
    private final long rxBytes;
    private final long txBytes;
+   // Phase 3.7i hybrid display: daemon-derived UI label.
+   // Values: "", "P2P", "Relayed", "Relayed (negotiating P2P)".
+   private final String connectionTypeExtended;
 
    public Peer(Status status, String ip, String fqdn,
                boolean relayed, boolean serverOnline,
                String effectiveMode, String configuredMode,
                String localEndpoint, String remoteEndpoint, String relayServer,
                String lastHandshake, String lastSeenAtServer,
-               long latencyMs, String groups, long rxBytes, long txBytes) {
+               long latencyMs, String groups, long rxBytes, long txBytes,
+               String connectionTypeExtended) {
       this.status = status;
       this.ip = ip;
       this.fqdn = fqdn;
@@ -41,6 +45,7 @@ public class Peer {
       this.groups = groups == null ? "" : groups;
       this.rxBytes = rxBytes;
       this.txBytes = txBytes;
+      this.connectionTypeExtended = connectionTypeExtended == null ? "" : connectionTypeExtended;
    }
 
    public Status getStatus() { return status; }
@@ -59,10 +64,16 @@ public class Peer {
    public String getGroups() { return groups; }
    public long getRxBytes() { return rxBytes; }
    public long getTxBytes() { return txBytes; }
+   public String getConnectionTypeExtended() { return connectionTypeExtended; }
 
-   /** Short connection-type label for the row: "P2P" / "Relayed" / "Idle" / "Offline". */
+   /** Short connection-type label for the row.
+    *  Prefers the daemon-derived ConnectionTypeExtended so the brief
+    *  "Relayed (negotiating P2P)" wakeup window is visible. Falls back
+    *  to the legacy (status, relayed, serverOnline) tuple when daemon
+    *  pre-dates Phase 3.7i. */
    public String getConnTypeLabel() {
       if (!serverOnline) return "Offline";
+      if (!connectionTypeExtended.isEmpty()) return connectionTypeExtended;
       if (status == Status.CONNECTED) return relayed ? "Relayed" : "P2P";
       return "Idle";
    }

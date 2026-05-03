@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 3.7i peer status: Idle (lazy/dynamic, waiting for traffic) -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#888888"/>
+    <corners android:radius="26dp"/>
+</shape>
