@@ -3,7 +3,6 @@ package io.netbird.client.ui.home;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,8 +23,6 @@ import io.netbird.client.ServiceAccessor;
 import io.netbird.client.StateListener;
 import io.netbird.client.StateListenerRegistry;
 import io.netbird.client.databinding.FragmentHomeBinding;
-import io.netbird.gomobile.android.PeerInfo;
-import io.netbird.gomobile.android.PeerInfoArray;
 
 public class HomeFragment extends Fragment implements StateListener {
 
@@ -68,7 +65,7 @@ public class HomeFragment extends Fragment implements StateListener {
         textNetworkAddress = binding.textNetworkAddress;
         TextView textConnStatus = binding.textConnectionStatus;
 
-        updatePeerCount(0,0);
+        updatePeerCounts(PeerCounts.empty());
 
         buttonConnect = binding.btnConnect;
         // Try to load the correct Lottie file for dark/light mode, fallback to light if dark is missing
@@ -193,7 +190,7 @@ public class HomeFragment extends Fragment implements StateListener {
             buttonAnimation.disconnected();
             buttonConnect.setEnabled(true);
         });
-        updatePeerCount(0, 0);
+        updatePeerCounts(PeerCounts.empty());
     }
 
     @Override
@@ -208,24 +205,26 @@ public class HomeFragment extends Fragment implements StateListener {
             return;
         }
         executor.execute(() -> {
-            PeerInfoArray peersList = serviceAccessor.getPeersList();
-            int connected = 0;
-            for (int i = 0; i < peersList.size(); i++) {
-                PeerInfo peer = peersList.get(i);
-                if(Status.fromLong(peer.getConnStatus()) == Status.CONNECTED) {
-                    connected++;
-                }
-            }
-            updatePeerCount(connected, peersList.size());
+            PeerCounts c = new PeerCounts(
+                    serviceAccessor.getConfiguredPeersTotal(),
+                    serviceAccessor.getServerOnlinePeers(),
+                    serviceAccessor.getP2pConnectedPeers(),
+                    serviceAccessor.getRelayedConnectedPeers(),
+                    serviceAccessor.getIdleOnlinePeers(),
+                    serviceAccessor.getServerOfflinePeers()
+            );
+            updatePeerCounts(c);
         });
     }
 
-    private void updatePeerCount(int connectedPeers, long totalPeers) {
-        if(binding==null) return;
-        TextView textPeersCount = binding.textOpenPanel;
-        String text = getString(R.string.peers_connected, connectedPeers, totalPeers);
-        textPeersCount.post(() ->
-                textPeersCount.setText(Html.fromHtml(text, Html.FROM_HTML_MODE_LEGACY))
-        );
+    private void updatePeerCounts(PeerCounts c) {
+        if (binding == null) return;
+        String summary = getString(R.string.peers_count_summary, c.serverOnline, c.configuredTotal);
+        String breakdown = getString(R.string.peers_count_breakdown,
+                c.p2pConnected, c.relayedConnected, c.idleOnline, c.serverOffline);
+        binding.textPeersSummary.post(() ->
+                binding.textPeersSummary.setText(android.text.Html.fromHtml(summary, android.text.Html.FROM_HTML_MODE_LEGACY)));
+        binding.textPeersBreakdown.post(() ->
+                binding.textPeersBreakdown.setText(breakdown));
     }
 }
