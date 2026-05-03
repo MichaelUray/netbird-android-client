@@ -307,6 +307,37 @@ class EngineRunner {
         }
     }
 
+    // Phase 3.7i (#5989): aggregate counters from FullStatus.
+    public long getConfiguredPeersTotal() {
+        if (goClient == null) return 0;
+        try { return goClient.getConfiguredPeersTotal(); } catch (Throwable t) { return 0; }
+    }
+
+    public long getServerOnlinePeers() {
+        if (goClient == null) return 0;
+        try { return goClient.getServerOnlinePeers(); } catch (Throwable t) { return 0; }
+    }
+
+    public long getP2pConnectedPeers() {
+        if (goClient == null) return 0;
+        try { return goClient.getP2PConnectedPeers(); } catch (Throwable t) { return 0; }
+    }
+
+    public long getRelayedConnectedPeers() {
+        if (goClient == null) return 0;
+        try { return goClient.getRelayedConnectedPeers(); } catch (Throwable t) { return 0; }
+    }
+
+    public long getIdleOnlinePeers() {
+        if (goClient == null) return 0;
+        try { return goClient.getIdleOnlinePeers(); } catch (Throwable t) { return 0; }
+    }
+
+    public long getServerOfflinePeers() {
+        if (goClient == null) return 0;
+        try { return goClient.getServerOfflinePeers(); } catch (Throwable t) { return 0; }
+    }
+
     public long getServerPushedRelayTimeoutSecs() {
         try { return goClient.getServerPushedRelayTimeoutSecs(); }
         catch (Throwable t) { return 0; }

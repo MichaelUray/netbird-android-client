@@ -448,6 +448,42 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     @Override
+    public long getConfiguredPeersTotal() {
+        if (mBinder == null) return 0;
+        return mBinder.getConfiguredPeersTotal();
+    }
+
+    @Override
+    public long getServerOnlinePeers() {
+        if (mBinder == null) return 0;
+        return mBinder.getServerOnlinePeers();
+    }
+
+    @Override
+    public long getP2pConnectedPeers() {
+        if (mBinder == null) return 0;
+        return mBinder.getP2pConnectedPeers();
+    }
+
+    @Override
+    public long getRelayedConnectedPeers() {
+        if (mBinder == null) return 0;
+        return mBinder.getRelayedConnectedPeers();
+    }
+
+    @Override
+    public long getIdleOnlinePeers() {
+        if (mBinder == null) return 0;
+        return mBinder.getIdleOnlinePeers();
+    }
+
+    @Override
+    public long getServerOfflinePeers() {
+        if (mBinder == null) return 0;
+        return mBinder.getServerOfflinePeers();
+    }
+
+    @Override
     public void addRouteChangeListener(RouteChangeListener listener) {
         if (mBinder == null) {
             Log.w(LOGTAG, "VPN binder is null");
