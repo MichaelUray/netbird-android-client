@@ -55,7 +55,25 @@ public class PeersFragmentViewModel extends ViewModel implements PeersStateListe
             }
 
             status = Status.fromLong(peerInfo.getConnStatus());
-            peers.add(new Peer(status, peerInfo.getIP(), peerInfo.getFQDN()));
+            // Phase 3.7i: enriched fields exposed via gomobile PeerInfo.
+            peers.add(new Peer(
+                    status,
+                    peerInfo.getIP(),
+                    peerInfo.getFQDN(),
+                    peerInfo.getRelayed(),
+                    peerInfo.getServerOnline(),
+                    peerInfo.getEffectiveConnectionMode(),
+                    peerInfo.getConfiguredConnectionMode(),
+                    peerInfo.getLocalIceCandidateEndpoint(),
+                    peerInfo.getRemoteIceCandidateEndpoint(),
+                    peerInfo.getRelayServerAddress(),
+                    peerInfo.getLastWireguardHandshake(),
+                    peerInfo.getLastSeenAtServer(),
+                    peerInfo.getLatencyMs(),
+                    peerInfo.getGroups(),
+                    peerInfo.getBytesRx(),
+                    peerInfo.getBytesTx()
+            ));
         }
         return peers;
     }
