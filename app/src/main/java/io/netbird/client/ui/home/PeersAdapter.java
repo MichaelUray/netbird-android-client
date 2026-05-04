@@ -61,6 +61,10 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
     @Override
     public void onBindViewHolder(@NonNull PeerViewHolder holder, int position) {
         Peer peer = filteredPeerList.get(position);
+        // Forward the live (unfiltered) list so the detail dialog's
+        // Refresh button can look up the latest snapshot by FQDN even
+        // if the user changes the filter while the dialog is open.
+        holder.adapterPeerList = peerList;
         holder.bind(peer);
     }
 
@@ -166,6 +170,10 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
 
     public static class PeerViewHolder extends RecyclerView.ViewHolder {
         ListItemPeerBinding binding;
+        // Reference to the adapter's live peer list so the detail
+        // dialog can look up the latest snapshot for Refresh. Set by
+        // the adapter on each onBindViewHolder.
+        List<Peer> adapterPeerList;
 
         public PeerViewHolder(ListItemPeerBinding binding) {
             super(binding.getRoot());
@@ -210,7 +218,11 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
             binding.verticalLine.setBackgroundResource(swatchRes);
 
             // Phase 3.7i: tap opens detail dialog with all available info.
-            binding.getRoot().setOnClickListener(v -> showDetailDialog(v.getContext(), peer));
+            // PeerViewHolder is static; receive the adapter's live peer
+            // list via setLiveList and forward to the lookup-by-FQDN
+            // overload of showDetailDialog (Refresh button).
+            final List<Peer> liveList = this.adapterPeerList;
+            binding.getRoot().setOnClickListener(v -> showDetailDialog(v.getContext(), liveList, peer.getFqdn()));
 
             // Long press still opens the existing copy-IP/copy-FQDN popup.
             binding.getRoot().setOnLongClickListener(v -> {
@@ -229,7 +241,37 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
      * a dark-mode app, so we hardcode dark text colors instead of using
      * the theme-aware nb_txt (which is white in dark mode → invisible).
      */
-    private static void showDetailDialog(Context ctx, Peer peer) {
+    // Look up the latest snapshot for this peer in the supplied
+    // adapter-backing list. The list is a live reference held by the
+    // ViewModel; the engine pushes updates into it via the status
+    // change callback, so by the time the user re-renders the dialog
+    // it usually has fresher numbers (handshake, latency, transfer
+    // bytes, etc). Falls back to a "no longer present" placeholder if
+    // the peer was removed from the mesh while the dialog was open.
+    private static Peer lookupPeer(List<Peer> liveList, String fqdn) {
+        if (liveList == null) return null;
+        for (Peer p : liveList) {
+            if (p.getFqdn().equals(fqdn)) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    private static void showDetailDialog(Context ctx, List<Peer> liveList, String fqdn) {
+        Peer peer = lookupPeer(liveList, fqdn);
+        if (peer == null) {
+            new AlertDialog.Builder(ctx)
+                    .setTitle(fqdn)
+                    .setMessage("Peer no longer in the mesh.")
+                    .setPositiveButton("Close", null)
+                    .show();
+            return;
+        }
+        showDetailDialog(ctx, liveList, peer);
+    }
+
+    private static void showDetailDialog(Context ctx, List<Peer> liveList, Peer peer) {
         // Read Show-Full preference here so the dialog reflects the
         // user's setting from AdvancedFragment.
         boolean full = false;
@@ -323,27 +365,60 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
             }
         }
 
+        // Snapshot-age footer: lets the user judge whether Refresh would
+        // help. Shows wall-clock seconds since the dialog was built --
+        // the underlying Peer object is from the adapter's last LiveData
+        // emission, so its data is at least this stale.
+        addSectionHeader(ctx, root, "Snapshot");
+        long openedAtMs = System.currentTimeMillis();
+        addRow(ctx, root, "Built at", new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US)
+                .format(new java.util.Date(openedAtMs)));
+
+        // Refresh button: re-renders the dialog with the latest snapshot
+        // for this peer-key from the adapter's current backing list. The
+        // adapter is updated by the engine's status-change callback path,
+        // so by the time the user taps Refresh the list usually already
+        // has fresher data. Closes the current dialog, opens a fresh one.
         new AlertDialog.Builder(ctx)
                 .setTitle(peer.getFqdn())
                 .setView(scroll)
                 .setPositiveButton("Close", null)
+                .setNeutralButton("Refresh", (d, which) -> showDetailDialog(ctx, liveList, peer.getFqdn()))
                 .show();
     }
 
-    // Hardcoded color constants — AlertDialog content lives on a light
-    // surface even when the host app is in dark mode, so theme-aware
-    // colors (which would be near-white in dark mode) make text
-    // invisible. These two ARGB values are visible on light AND dark
-    // dialog surfaces.
-    private static final int DIALOG_LABEL_COLOR = 0xFF6E6E6E;
-    private static final int DIALOG_VALUE_COLOR = 0xFF1A1A1A;
+    // Theme-aware text colours. Earlier code hard-coded
+    // 0xFF1A1A1A for the value text under the (incorrect) assumption
+    // that AlertDialog content always renders on a light surface; on
+    // Android 13/14+ in dark mode the dialog background is dark grey,
+    // making nearly-black text invisible. Resolve from the current
+    // theme via android.R.attr.textColorPrimary / textColorSecondary
+    // so the dialog reads correctly under both light and dark themes.
+    private static int resolveThemeColor(Context ctx, int attr, int fallback) {
+        TypedValue tv = new TypedValue();
+        if (!ctx.getTheme().resolveAttribute(attr, tv, true)) {
+            return fallback;
+        }
+        if (tv.resourceId != 0) {
+            return ContextCompat.getColor(ctx, tv.resourceId);
+        }
+        return tv.data;
+    }
+
+    private static int dialogValueColor(Context ctx) {
+        return resolveThemeColor(ctx, android.R.attr.textColorPrimary, 0xFF1A1A1A);
+    }
+
+    private static int dialogLabelColor(Context ctx) {
+        return resolveThemeColor(ctx, android.R.attr.textColorSecondary, 0xFF6E6E6E);
+    }
 
     private static void addSectionHeader(Context ctx, LinearLayout parent, String text) {
         TextView tv = new TextView(ctx);
         tv.setText(text.toUpperCase());
         tv.setTypeface(Typeface.DEFAULT_BOLD);
         tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        tv.setTextColor(DIALOG_LABEL_COLOR);
+        tv.setTextColor(dialogLabelColor(ctx));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -360,7 +435,7 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
         TextView lbl = new TextView(ctx);
         lbl.setText(label);
         lbl.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        lbl.setTextColor(DIALOG_LABEL_COLOR);
+        lbl.setTextColor(dialogLabelColor(ctx));
         LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -371,7 +446,7 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
         TextView val = new TextView(ctx);
         val.setText(value);
         val.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-        val.setTextColor(DIALOG_VALUE_COLOR);
+        val.setTextColor(dialogValueColor(ctx));
         val.setTextIsSelectable(true);
         val.setGravity(Gravity.START);
         LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(
