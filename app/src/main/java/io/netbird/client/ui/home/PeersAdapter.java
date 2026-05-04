@@ -419,6 +419,9 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
         tv.setTypeface(Typeface.DEFAULT_BOLD);
         tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         tv.setTextColor(dialogLabelColor(ctx));
+        // Phase 3.7i (#5989): make section headers + labels selectable too
+        // so the user can select an entire row (label + value) and copy it.
+        tv.setTextIsSelectable(true);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -436,6 +439,7 @@ public class PeersAdapter extends RecyclerView.Adapter<PeersAdapter.PeerViewHold
         lbl.setText(label);
         lbl.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         lbl.setTextColor(dialogLabelColor(ctx));
+        lbl.setTextIsSelectable(true);
         LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
